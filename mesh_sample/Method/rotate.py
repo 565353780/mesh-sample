@@ -33,7 +33,7 @@ def compute_rotation_matrix(from_vec, to_vec):
     return R
 
 
-def getRotationAndTranslate(v: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def getRAndT(v: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     v = np.array(v)  # v = [v0, v1, v2]
 
     # 1. 重心
@@ -50,6 +50,3 @@ def getRotationAndTranslate(v: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     R = compute_rotation_matrix(n, np.array([0, 0, 1]))
 
     return R, -G
-
-    # 5. 应用旋转
-    v_rotated = (R @ v_centered.T).T

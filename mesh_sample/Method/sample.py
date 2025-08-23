@@ -5,7 +5,7 @@ from typing import Union
 from scipy.spatial import Delaunay
 
 from mesh_sample.Config.constant import K
-from mesh_sample.Method.rotate import getRotationAndTranslate
+from mesh_sample.Method.rotate import getRAndT
 
 
 def toTriangleArea(v1: np.ndarray, v2: np.ndarray) -> float:
@@ -104,7 +104,7 @@ def toSubdivMesh(
 
     merge_points = np.vstack(merge_points)
 
-    R, T = getRotationAndTranslate(vertices)
+    R, T = getRAndT(vertices)
 
     uni_points = (merge_points + T) @ R.T
 
