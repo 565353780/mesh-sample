@@ -77,6 +77,9 @@ class EdgePoints(object):
                 np.ones(curr_edge_points.shape[0], dtype=np.int32) * edge_idx
             )
 
+        if len(edge_points) == 0:
+            return True
+
         self.edge_points = np.vstack(edge_points)
         self.point_edge_idxs = np.hstack(point_edge_idxs)
         return True

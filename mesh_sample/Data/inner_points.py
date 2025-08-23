@@ -63,8 +63,6 @@ class InnerPoints(object):
 
     def getTriangleInnerPointIdxs(self, triangle_idx: int) -> Union[np.ndarray, None]:
         if self.inner_points.shape[0] == 0:
-            print("[ERROR][InnerPoints::getTriangleInnerPointIdxs]")
-            print("\t inner_points is empty! please load mesh first!")
             return None
 
         triangle_inner_point_idxs = np.where(self.point_triangle_idxs == triangle_idx)[

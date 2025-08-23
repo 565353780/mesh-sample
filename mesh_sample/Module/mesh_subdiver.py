@@ -62,11 +62,21 @@ class MeshSubdiver(object):
         return True
 
     def createMergeVertices(self) -> bool:
-        vertices = self.vertices
         edge_points = self.edge_points.edge_points
         inner_points = self.inner_points.inner_points
 
-        self.merge_vertices = np.vstack([vertices, edge_points, inner_points])
+        merge_vertices = [self.vertices]
+
+        if edge_points.shape[0] > 0:
+            merge_vertices.append(edge_points)
+        if inner_points.shape[0] > 0:
+            merge_vertices.append(inner_points)
+
+        if len(merge_vertices) == 1:
+            self.merge_vertices = self.vertices
+            return True
+
+        self.merge_vertices = np.vstack(merge_vertices)
         return True
 
     def createSubdivTriangles(self, triangle_idx: int) -> Union[np.ndarray, None]:
