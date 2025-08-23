@@ -8,7 +8,7 @@ from mesh_sample.Module.mesh_subdiver import MeshSubdiver
 
 def demo():
     mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
-    dist_max = 0.1
+    dist_max = 0.001
 
     if not os.path.exists(mesh_file_path):
         print("mesh file not exist!")
