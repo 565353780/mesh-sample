@@ -1,12 +1,15 @@
+import os
 import numpy as np
 import open3d as o3d
-from tqdm import trange
 from typing import Union
+from tqdm import tqdm, trange
 from scipy.spatial import Delaunay
+from joblib import Parallel, delayed
 
 from mesh_sample.Data.edge_points import EdgePoints
 from mesh_sample.Data.inner_points import InnerPoints
 from mesh_sample.Method.rotate import getRAndT
+from mesh_sample.Module.tqdm_joblib import tqdm_joblib
 
 
 class MeshSubdiver(object):
@@ -130,15 +133,43 @@ class MeshSubdiver(object):
 
         return unique_triangles
 
-    def createSubdivMesh(self) -> o3d.geometry.TriangleMesh:
+    def createAllSubdivTriangles(self) -> np.ndarray:
         subdiv_triangles = []
-        print("[INFO][MeshSubdiver::createSubdivMesh]")
+        print("[INFO][MeshSubdiver::createAllSubdivTriangles]")
         print("\t start subdiv triangles...")
         for i in trange(self.triangleNum):
             curr_subdiv_triangles = self.createSubdivTriangles(i)
             subdiv_triangles.append(curr_subdiv_triangles)
 
         subdiv_triangles = np.vstack(subdiv_triangles)
+
+        return subdiv_triangles
+
+    def createAllSubdivTrianglesJoblib(
+        self,
+        n_jobs: int = os.cpu_count(),
+    ) -> bool:
+        subdiv_triangles = []
+
+        print("[INFO][MeshSubdiver::createAllSubdivTrianglesJoblib]")
+        print("\t start subdiv triangles...")
+        with tqdm(total=self.triangleNum) as progress:
+            with tqdm_joblib(progress):
+                results = Parallel(n_jobs=n_jobs)(
+                    delayed(self.createSubdivTriangles)(i)
+                    for i in range(self.triangleNum)
+                )
+
+        subdiv_triangles = np.vstack(results)
+
+        return subdiv_triangles
+
+    def createSubdivMesh(
+        self,
+        n_jobs: int = os.cpu_count(),
+    ) -> o3d.geometry.TriangleMesh:
+        # subdiv_triangles = self.createAllSubdivTriangles()
+        subdiv_triangles = self.createAllSubdivTrianglesJoblib(n_jobs)
 
         subdiv_mesh = o3d.geometry.TriangleMesh()
         subdiv_mesh.vertices = o3d.utility.Vector3dVector(self.merge_vertices)
