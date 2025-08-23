@@ -8,39 +8,6 @@ from mesh_sample.Config.constant import K
 from mesh_sample.Method.rotate import getRAndT
 
 
-def toTriangleArea(v1: np.ndarray, v2: np.ndarray) -> float:
-    cross = np.cross(v1, v2)
-    area = 0.5 * np.linalg.norm(cross)
-    return float(area)
-
-
-def sampleInnerPoints(vertices: np.ndarray, dist_max: float) -> Union[np.ndarray, None]:
-    if vertices.shape[0] != 3:
-        print("[ERROR][sample::toSubdivMesh]")
-        print("\t vertices.shape != [3, 3]!")
-        print("\t vertices.shape:", vertices.shape)
-        return None
-
-    area = toTriangleArea(vertices[1] - vertices[0], vertices[2] - vertices[0])
-    sample_point_num = floor(area / K / dist_max / dist_max)
-    if sample_point_num < 1:
-        return None
-
-    triangles = np.array([[0, 1, 2]], dtype=np.int32)
-
-    center = np.mean(vertices, axis=0)
-    move_directions = center - vertices
-    move_directions /= np.linalg.norm(move_directions, axis=1, keepdims=True)
-    scaled_vertices = vertices + move_directions * dist_max
-    mesh = o3d.geometry.TriangleMesh()
-    mesh.vertices = o3d.utility.Vector3dVector(scaled_vertices)
-    mesh.triangles = o3d.utility.Vector3iVector(triangles)
-
-    inner_pcd = mesh.sample_points_poisson_disk(sample_point_num)
-    inner_points = np.asarray(inner_pcd.points)
-    return inner_points
-
-
 def sampleEdgePoints(
     p1: np.ndarray, p2: np.ndarray, dist_max: float
 ) -> Union[np.ndarray, None]:
@@ -78,18 +45,50 @@ def sampleBoundPoints(vertices: np.ndarray, dist_max: float) -> Union[np.ndarray
     return bound_points
 
 
+def toTriangleArea(v1: np.ndarray, v2: np.ndarray) -> float:
+    cross = np.cross(v1, v2)
+    area = 0.5 * np.linalg.norm(cross)
+    return float(area)
+
+
+def sampleInnerPoints(vertices: np.ndarray, dist_max: float) -> Union[np.ndarray, None]:
+    if vertices.shape[0] != 3:
+        print("[ERROR][sample::toSubdivMesh]")
+        print("\t vertices.shape != [3, 3]!")
+        print("\t vertices.shape:", vertices.shape)
+        return None
+
+    area = toTriangleArea(vertices[1] - vertices[0], vertices[2] - vertices[0])
+    sample_point_num = floor(area / K / dist_max / dist_max)
+    if sample_point_num < 1:
+        return None
+
+    triangles = np.array([[0, 1, 2]], dtype=np.int32)
+
+    center = np.mean(vertices, axis=0)
+    move_directions = center - vertices
+    move_directions /= np.linalg.norm(move_directions, axis=1, keepdims=True)
+    scaled_vertices = vertices + move_directions * dist_max
+    mesh = o3d.geometry.TriangleMesh()
+    mesh.vertices = o3d.utility.Vector3dVector(scaled_vertices)
+    mesh.triangles = o3d.utility.Vector3iVector(triangles)
+
+    inner_pcd = mesh.sample_points_poisson_disk(sample_point_num)
+    inner_points = np.asarray(inner_pcd.points)
+    return inner_points
+
+
 def toSubdivMesh(
     vertices: np.ndarray, dist_max: float
 ) -> Union[o3d.geometry.TriangleMesh, None]:
+    bound_points = sampleBoundPoints(vertices, dist_max)
     inner_points = sampleInnerPoints(vertices, dist_max)
 
-    bound_points = sampleBoundPoints(vertices, dist_max)
-
     merge_points = []
-    if inner_points is not None:
-        merge_points.append(inner_points)
     if bound_points is not None:
         merge_points.append(bound_points)
+    if inner_points is not None:
+        merge_points.append(inner_points)
 
     if len(merge_points) == 0:
         subdiv_mesh = o3d.geometry.TriangleMesh()

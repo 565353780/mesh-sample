@@ -1,7 +1,8 @@
 import numpy as np
+import open3d as o3d
 
+from mesh_sample.Module.mesh_subdiver import MeshSubdiver
 from mesh_sample.Method.sample import toSubdivMesh
-from mesh_sample.Method.render import renderSubdivMesh
 
 dist_max = 0.1
 
@@ -16,4 +17,7 @@ vertices = np.array(
 subdiv_mesh = toSubdivMesh(vertices, dist_max)
 assert subdiv_mesh is not None, "toSubdivMesh failed!"
 
-renderSubdivMesh(subdiv_mesh)
+mesh_subdiver = MeshSubdiver(subdiv_mesh, dist_max * 0.1)
+subdiv_mesh = mesh_subdiver.createSubdivMesh()
+
+o3d.visualization.draw_geometries([subdiv_mesh])
