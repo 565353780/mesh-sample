@@ -2,8 +2,12 @@ import numpy as np
 from typing import Tuple
 
 
-def normalize(v):
-    return v / np.linalg.norm(v)
+def normalize(v: np.ndarray) -> np.ndarray:
+    v_norm = np.linalg.norm(v)
+    if v_norm == 0:
+        return v
+
+    return v / v_norm
 
 
 def compute_rotation_matrix(from_vec, to_vec):
@@ -34,19 +38,13 @@ def compute_rotation_matrix(from_vec, to_vec):
 
 
 def getRAndT(v: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    v = np.array(v)  # v = [v0, v1, v2]
-
-    # 1. 重心
     G = np.mean(v, axis=0)
 
-    # 2. 平移到重心为原点
     v_centered = v - G
 
-    # 3. 法向量
     n = np.cross(v_centered[1] - v_centered[0], v_centered[2] - v_centered[0])
     n = normalize(n)
 
-    # 4. 旋转矩阵，使法向量旋转到 [0, 0, 1]
     R = compute_rotation_matrix(n, np.array([0, 0, 1]))
 
     return R, -G

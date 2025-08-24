@@ -8,6 +8,7 @@ from mesh_sample.Module.mesh_subdiver import MeshSubdiver
 def demo():
     mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
     dist_max = 1.0 / 500
+    save_mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/subdiv_mesh/BitAZ.ply"
 
     if not os.path.exists(mesh_file_path):
         print("mesh file not exist!")
@@ -17,7 +18,7 @@ def demo():
     mesh = o3d.io.read_triangle_mesh(mesh_file_path)
 
     mesh_subdiver = MeshSubdiver(mesh, dist_max)
-    subdiv_mesh = mesh_subdiver.createSubdivMesh()
+    subdiv_mesh = mesh_subdiver.createSubdivMesh(save_mesh_file_path)
 
     renderMeshEdges(subdiv_mesh)
     return True

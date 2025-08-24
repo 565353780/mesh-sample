@@ -8,10 +8,17 @@ from joblib import Parallel, delayed
 
 from mesh_sample.Data.edge_points import EdgePoints
 from mesh_sample.Data.inner_points import InnerPoints
+from mesh_sample.Method.path import createFileFolder, renameFile
 from mesh_sample.Method.dist import toMinVertexDist
 from mesh_sample.Method.scale import toMaxBound
 from mesh_sample.Method.rotate import getRAndT
 from mesh_sample.Module.tqdm_joblib import tqdm_joblib
+
+"""
+import warnings
+
+warnings.filterwarnings("error", category=RuntimeWarning)
+"""
 
 
 class MeshSubdiver(object):
@@ -121,7 +128,7 @@ class MeshSubdiver(object):
             merge_vertex_idxs.append(triangle_inner_point_idxs)
 
         if len(merge_vertex_idxs) == 1:
-            return merge_vertex_idxs[0]
+            return merge_vertex_idxs[0].reshape(1, 3)
 
         merge_vertex_idxs = np.hstack(merge_vertex_idxs)
         merge_vertices = self.merge_vertices[merge_vertex_idxs]
@@ -129,6 +136,27 @@ class MeshSubdiver(object):
         R, T = getRAndT(merge_vertices)
 
         unit_vertices = (merge_vertices + T) @ R.T
+        """
+        try:
+            unit_vertices = (merge_vertices + T) @ R.T
+        except RuntimeWarning as e:
+            print("⚠️ 捕获到 RuntimeWarning:", e)
+            print("merge_vertices shape:", merge_vertices.shape)
+            print("T shape:", T.shape)
+            print("R shape:", R.shape)
+
+            # 检查是否有非法值
+            def check_array(name, arr):
+                print(f"{name}:")
+                print("  Any NaN:", np.isnan(arr).any())
+                print("  Any Inf:", np.isinf(arr).any())
+                print("  Max abs value:", np.max(np.abs(arr)))
+                print("  Sample:", arr[:5])
+
+            check_array("merge_vertices", merge_vertices)
+            check_array("T", T)
+            check_array("R", R)
+        """
 
         tri = Delaunay(unit_vertices[:, :2])
         triangles = tri.simplices
@@ -170,6 +198,7 @@ class MeshSubdiver(object):
 
     def createSubdivMesh(
         self,
+        save_mesh_file_path: Union[str, None] = None,
         n_jobs: int = os.cpu_count(),
     ) -> o3d.geometry.TriangleMesh:
         self.createMergeVertices()
@@ -181,5 +210,17 @@ class MeshSubdiver(object):
         subdiv_mesh = o3d.geometry.TriangleMesh()
         subdiv_mesh.vertices = o3d.utility.Vector3dVector(self.merge_vertices)
         subdiv_mesh.triangles = o3d.utility.Vector3iVector(subdiv_triangles)
+
+        if save_mesh_file_path is not None:
+            createFileFolder(save_mesh_file_path)
+
+            tmp_save_mesh_file_path = (
+                save_mesh_file_path[:-4] + "_tmp" + save_mesh_file_path[-4:]
+            )
+            o3d.io.write_triangle_mesh(
+                tmp_save_mesh_file_path, subdiv_mesh, write_ascii=True
+            )
+
+            renameFile(tmp_save_mesh_file_path, save_mesh_file_path)
 
         return subdiv_mesh
