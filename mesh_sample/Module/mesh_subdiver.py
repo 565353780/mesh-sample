@@ -8,6 +8,8 @@ from joblib import Parallel, delayed
 
 from mesh_sample.Data.edge_points import EdgePoints
 from mesh_sample.Data.inner_points import InnerPoints
+from mesh_sample.Method.dist import toMinVertexDist
+from mesh_sample.Method.scale import toMaxBound
 from mesh_sample.Method.rotate import getRAndT
 from mesh_sample.Module.tqdm_joblib import tqdm_joblib
 
@@ -60,8 +62,13 @@ class MeshSubdiver(object):
     def loadMesh(self, mesh: o3d.geometry.TriangleMesh, dist_max: float) -> bool:
         self.triangles = np.asarray(mesh.triangles)
 
-        self.edge_points.loadMesh(mesh, dist_max)
-        self.inner_points.loadMesh(mesh, dist_max)
+        max_bound = toMaxBound(mesh)
+        weighted_dist_max = dist_max * max_bound
+        # min_vertex_dist = toMinVertexDist(mesh)
+        # weighted_dist_max = dist_max * max_bound + (1.0 - dist_max) * min_vertex_dist
+
+        self.edge_points.loadMesh(mesh, weighted_dist_max)
+        self.inner_points.loadMesh(mesh, weighted_dist_max)
         return True
 
     def createMergeVertices(self) -> bool:
@@ -93,9 +100,6 @@ class MeshSubdiver(object):
             print("\t triangle idx out of range!")
             print("\t triangle_idx:", triangle_idx)
             return None
-
-        self.createMergeVertices()
-        assert self.merge_vertices is not None
 
         triangle_vertex_idxs = self.triangles[triangle_idx]
 
@@ -168,6 +172,9 @@ class MeshSubdiver(object):
         self,
         n_jobs: int = os.cpu_count(),
     ) -> o3d.geometry.TriangleMesh:
+        self.createMergeVertices()
+        assert self.merge_vertices.shape[0] > 0
+
         # subdiv_triangles = self.createAllSubdivTriangles()
         subdiv_triangles = self.createAllSubdivTrianglesJoblib(n_jobs)
 

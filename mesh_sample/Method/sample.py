@@ -66,9 +66,21 @@ def sampleInnerPoints(vertices: np.ndarray, dist_max: float) -> Union[np.ndarray
     triangles = np.array([[0, 1, 2]], dtype=np.int32)
 
     center = np.mean(vertices, axis=0)
-    move_directions = center - vertices
-    move_directions /= np.linalg.norm(move_directions, axis=1, keepdims=True)
-    scaled_vertices = vertices + move_directions * dist_max
+    move_vectors = center - vertices
+    move_dists = np.linalg.norm(move_vectors, axis=1, keepdims=True)
+    max_move_dists = np.max(move_dists)
+    if max_move_dists < dist_max:
+        return None
+
+    valid_move_dists = np.minimum(move_dists, dist_max)
+
+    move_directions = np.zeros_like(move_vectors, dtype=float)
+    valid_channels = (valid_move_dists > 0).reshape(-1)
+
+    move_directions[valid_channels] = (
+        move_vectors[valid_channels] / move_dists[valid_channels]
+    )
+    scaled_vertices = vertices + move_directions * valid_move_dists
     mesh = o3d.geometry.TriangleMesh()
     mesh.vertices = o3d.utility.Vector3dVector(scaled_vertices)
     mesh.triangles = o3d.utility.Vector3iVector(triangles)
