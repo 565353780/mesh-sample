@@ -1,6 +1,6 @@
 import numpy as np
 import open3d as o3d
-from tqdm import trange
+from tqdm import tqdm
 from typing import Union
 
 from mesh_sample.Data.edges import Edges
@@ -12,8 +12,10 @@ class EdgePoints(object):
         self,
         mesh: Union[o3d.geometry.TriangleMesh, None] = None,
         dist_max: float = 0.1,
+        print_progress: bool = True,
     ) -> None:
         self.dist_max = dist_max
+        self.print_progress = print_progress
 
         self.vertices = np.array([])
 
@@ -63,9 +65,12 @@ class EdgePoints(object):
         edge_points = []
         point_edge_idxs = []
 
-        print("[INFO][EdgePoints::loadMesh]")
-        print("\t start create edge points...")
-        for edge_idx in trange(self.edges.edgeNum):
+        for_data = range(self.edges.edgeNum)
+        if self.print_progress:
+            for_data = tqdm(for_data)
+            print("[INFO][EdgePoints::loadMesh]")
+            print("\t start create edge points...")
+        for edge_idx in for_data:
             curr_edge_points = self.createEdgePoints(edge_idx, self.dist_max)
 
             if curr_edge_points is None:

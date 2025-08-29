@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import open3d as o3d
+from tqdm import tqdm
 from typing import Union
-from tqdm import tqdm, trange
 from scipy.spatial import Delaunay
 from joblib import Parallel, delayed
 
@@ -30,8 +30,8 @@ class MeshSubdiver(object):
     ) -> None:
         self.print_progress = print_progress
 
-        self.edge_points = EdgePoints()
-        self.inner_points = InnerPoints()
+        self.edge_points = EdgePoints(print_progress=self.print_progress)
+        self.inner_points = InnerPoints(print_progress=self.print_progress)
 
         self.triangles = np.array([])
 
@@ -171,10 +171,12 @@ class MeshSubdiver(object):
     def createAllSubdivTriangles(self) -> np.ndarray:
         subdiv_triangles = []
 
+        for_data = range(self.triangleNum)
         if self.print_progress:
+            for_data = tqdm(for_data)
             print("[INFO][MeshSubdiver::createAllSubdivTriangles]")
             print("\t start subdiv triangles...")
-            for i in trange(self.triangleNum):
+            for i in for_data:
                 curr_subdiv_triangles = self.createSubdivTriangles(i)
                 subdiv_triangles.append(curr_subdiv_triangles)
         else:

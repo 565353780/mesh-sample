@@ -14,8 +14,10 @@ class InnerPoints(object):
         self,
         mesh: Union[o3d.geometry.TriangleMesh, None] = None,
         dist_max: float = 0.1,
+        print_progress: bool = True,
     ) -> None:
         self.dist_max = dist_max
+        self.print_progress = print_progress
 
         self.vertices = np.array([])
         self.triangles = np.array([])
@@ -46,9 +48,12 @@ class InnerPoints(object):
         inner_points = []
         point_triangle_idxs = []
 
-        print("[INFO][InnerPoints::createInnerPoints]")
-        print("\t start create inner points...")
-        for i in tqdm(range(self.triangles.shape[0])):
+        for_data = range(self.triangles.shape[0])
+        if self.print_progress:
+            for_data = tqdm(for_data)
+            print("[INFO][InnerPoints::createInnerPoints]")
+            print("\t start create inner points...")
+        for i in for_data:
             curr_inner_points, curr_point_triangle_idxs = (
                 self.createTriangleInnerPoints(i)
             )
@@ -71,14 +76,20 @@ class InnerPoints(object):
         inner_points = []
         point_triangle_idxs = []
 
-        print("[INFO][InnerPoints::createInnerPointsMP]")
-        print("\t start create inner points...")
-        with tqdm(total=self.triangles.shape[0]) as progress:
-            with tqdm_joblib(progress):
-                results = Parallel(n_jobs=n_jobs)(
-                    delayed(self.createTriangleInnerPoints)(i)
-                    for i in range(self.triangles.shape[0])
-                )
+        if self.print_progress:
+            print("[INFO][InnerPoints::createInnerPointsMP]")
+            print("\t start create inner points...")
+            with tqdm(total=self.triangles.shape[0]) as progress:
+                with tqdm_joblib(progress):
+                    results = Parallel(n_jobs=n_jobs)(
+                        delayed(self.createTriangleInnerPoints)(i)
+                        for i in range(self.triangles.shape[0])
+                    )
+        else:
+            results = Parallel(n_jobs=n_jobs)(
+                delayed(self.createTriangleInnerPoints)(i)
+                for i in range(self.triangles.shape[0])
+            )
 
         for result in results:
             if result is None:
