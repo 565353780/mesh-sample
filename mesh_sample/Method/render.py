@@ -5,6 +5,16 @@ import matplotlib.pyplot as plt
 from mesh_sample.Method.rotate import getRAndT
 
 
+def toReversedMesh(mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
+    reversed_mesh = o3d.geometry.TriangleMesh()
+    reversed_mesh.vertices = mesh.vertices
+    reversed_mesh.triangles = o3d.utility.Vector3iVector(
+        np.asarray(mesh.triangles)[:, [0, 2, 1]]
+    )
+    reversed_mesh.compute_vertex_normals()
+    return reversed_mesh
+
+
 def meshToLineSet(mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.LineSet:
     edges = set()
     triangles = np.asarray(mesh.triangles)
@@ -52,17 +62,23 @@ def renderMeshEdges(mesh: o3d.geometry.TriangleMesh) -> bool:
 
 def renderTriangleNormals(
     mesh: o3d.geometry.TriangleMesh,
-    normal_length: float = 0.01,
+    normal_scale: float = 0.01,
 ) -> bool:
-    mesh.compute_triangle_normals()
+    # 获取法向量
+    triangle_normals = np.asarray(mesh.triangle_normals)
+
+    if triangle_normals.size == 0:
+        print("[ERROR][render::renderTriangleNormals]")
+        print("\t triangle normals not found!")
+        return False
 
     # 获取三角形的中心点
     triangles = np.asarray(mesh.triangles)
     vertices = np.asarray(mesh.vertices)
     triangle_centers = np.mean(vertices[triangles], axis=1)
 
-    # 获取法向量
-    triangle_normals = np.asarray(mesh.triangle_normals)
+    extent_max = np.max(np.max(vertices, axis=0) - np.min(vertices, axis=0))
+    normal_length = normal_scale * extent_max
 
     # 创建法向箭头（小线段）用于可视化
     line_set = o3d.geometry.LineSet()
@@ -83,6 +99,8 @@ def renderTriangleNormals(
     line_set.lines = o3d.utility.Vector2iVector(lines)
     line_set.colors = o3d.utility.Vector3dVector(colors)
 
+    reversed_mesh = toReversedMesh(mesh)
+
     # 可视化：网格 + 法向线段
-    o3d.visualization.draw_geometries([mesh, line_set])
+    o3d.visualization.draw_geometries([mesh, reversed_mesh, line_set])
     return True

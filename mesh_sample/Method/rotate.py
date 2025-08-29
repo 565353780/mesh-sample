@@ -1,13 +1,7 @@
 import numpy as np
 from typing import Tuple
 
-
-def normalize(v: np.ndarray) -> np.ndarray:
-    v_norm = np.linalg.norm(v)
-    if v_norm == 0:
-        return v
-
-    return v / v_norm
+from mesh_sample.Method.normal import normalize
 
 
 def compute_rotation_matrix(from_vec, to_vec):

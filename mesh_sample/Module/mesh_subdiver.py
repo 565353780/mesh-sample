@@ -8,6 +8,7 @@ from joblib import Parallel, delayed
 
 from mesh_sample.Data.edge_points import EdgePoints
 from mesh_sample.Data.inner_points import InnerPoints
+from mesh_sample.Method.normal import updateTriangleNormals, updateVertexNormals
 from mesh_sample.Method.path import createFileFolder, renameFile
 from mesh_sample.Method.dist import toMinVertexDist
 from mesh_sample.Method.scale import toMaxBound
@@ -226,6 +227,9 @@ class MeshSubdiver(object):
         subdiv_mesh = o3d.geometry.TriangleMesh()
         subdiv_mesh.vertices = o3d.utility.Vector3dVector(self.merge_vertices)
         subdiv_mesh.triangles = o3d.utility.Vector3iVector(subdiv_triangles)
+
+        updateVertexNormals(subdiv_mesh)
+        updateTriangleNormals(subdiv_mesh)
 
         if save_mesh_file_path is not None:
             createFileFolder(save_mesh_file_path)

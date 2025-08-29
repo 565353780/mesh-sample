@@ -5,6 +5,7 @@ from typing import Union
 from scipy.spatial import Delaunay
 
 from mesh_sample.Config.constant import K
+from mesh_sample.Method.normal import normalize
 from mesh_sample.Method.rotate import getRAndT
 
 
@@ -59,28 +60,28 @@ def sampleInnerPoints(vertices: np.ndarray, dist_max: float) -> Union[np.ndarray
         return None
 
     area = toTriangleArea(vertices[1] - vertices[0], vertices[2] - vertices[0])
+    assert area > 0
+
     sample_point_num = floor(area / K / dist_max / dist_max)
     if sample_point_num < 1:
         return None
 
+    center = np.mean(vertices, axis=0)
+
+    if sample_point_num == 1:
+        return center.reshape(1, 3)
+
     triangles = np.array([[0, 1, 2]], dtype=np.int32)
 
-    center = np.mean(vertices, axis=0)
     move_vectors = center - vertices
     move_dists = np.linalg.norm(move_vectors, axis=1, keepdims=True)
     max_move_dists = np.max(move_dists)
-    if max_move_dists < dist_max:
+    if max_move_dists <= dist_max:
         return None
 
     valid_move_dists = np.minimum(move_dists, dist_max)
 
-    move_directions = np.zeros_like(move_vectors, dtype=float)
-    valid_channels = (valid_move_dists > 0).reshape(-1)
-
-    move_directions[valid_channels] = (
-        move_vectors[valid_channels] / move_dists[valid_channels]
-    )
-    scaled_vertices = vertices + move_directions * valid_move_dists
+    scaled_vertices = vertices + normalize(move_vectors) * valid_move_dists
     mesh = o3d.geometry.TriangleMesh()
     mesh.vertices = o3d.utility.Vector3dVector(scaled_vertices)
     mesh.triangles = o3d.utility.Vector3iVector(triangles)
