@@ -26,7 +26,10 @@ class MeshSubdiver(object):
         self,
         mesh: Union[o3d.geometry.TriangleMesh, None] = None,
         dist_max: float = 0.1,
+        print_progress: bool = True,
     ) -> None:
+        self.print_progress = print_progress
+
         self.edge_points = EdgePoints()
         self.inner_points = InnerPoints()
 
@@ -167,11 +170,17 @@ class MeshSubdiver(object):
 
     def createAllSubdivTriangles(self) -> np.ndarray:
         subdiv_triangles = []
-        print("[INFO][MeshSubdiver::createAllSubdivTriangles]")
-        print("\t start subdiv triangles...")
-        for i in trange(self.triangleNum):
-            curr_subdiv_triangles = self.createSubdivTriangles(i)
-            subdiv_triangles.append(curr_subdiv_triangles)
+
+        if self.print_progress:
+            print("[INFO][MeshSubdiver::createAllSubdivTriangles]")
+            print("\t start subdiv triangles...")
+            for i in trange(self.triangleNum):
+                curr_subdiv_triangles = self.createSubdivTriangles(i)
+                subdiv_triangles.append(curr_subdiv_triangles)
+        else:
+            for i in range(self.triangleNum):
+                curr_subdiv_triangles = self.createSubdivTriangles(i)
+                subdiv_triangles.append(curr_subdiv_triangles)
 
         subdiv_triangles = np.vstack(subdiv_triangles)
 
@@ -183,14 +192,19 @@ class MeshSubdiver(object):
     ) -> bool:
         subdiv_triangles = []
 
-        print("[INFO][MeshSubdiver::createAllSubdivTrianglesJoblib]")
-        print("\t start subdiv triangles...")
-        with tqdm(total=self.triangleNum) as progress:
-            with tqdm_joblib(progress):
-                results = Parallel(n_jobs=n_jobs)(
-                    delayed(self.createSubdivTriangles)(i)
-                    for i in range(self.triangleNum)
-                )
+        if self.print_progress:
+            print("[INFO][MeshSubdiver::createAllSubdivTrianglesJoblib]")
+            print("\t start subdiv triangles...")
+            with tqdm(total=self.triangleNum) as progress:
+                with tqdm_joblib(progress):
+                    results = Parallel(n_jobs=n_jobs)(
+                        delayed(self.createSubdivTriangles)(i)
+                        for i in range(self.triangleNum)
+                    )
+        else:
+            results = Parallel(n_jobs=n_jobs)(
+                delayed(self.createSubdivTriangles)(i) for i in range(self.triangleNum)
+            )
 
         subdiv_triangles = np.vstack(results)
 
