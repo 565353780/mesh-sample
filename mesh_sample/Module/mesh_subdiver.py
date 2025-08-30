@@ -100,7 +100,7 @@ class MeshSubdiver(object):
         return True
 
     def createSubdivTriangles(self, triangle_idx: int) -> Union[np.ndarray, None]:
-        if self.triangles.shape[0] == 0:
+        if self.triangles.size == 0:
             print("[ERROR][MeshSubdiver::createSubdivTriangle]")
             print("\t triangles is empty! please load mesh first!")
             return None
@@ -144,7 +144,7 @@ class MeshSubdiver(object):
         triangles = tri.simplices
 
         triangle_areas = toTriangleAreas(merge_vertices, triangles, True)
-        valid_triangle_mask = triangle_areas > 1e-6
+        valid_triangle_mask = triangle_areas > 1e-12
 
         valid_triangles = triangles[valid_triangle_mask]
 
