@@ -34,9 +34,21 @@ def updateVertexNormals(mesh: o3d.geometry.TriangleMesh) -> bool:
     return True
 
 
-def updateTriangleNormals(mesh: o3d.geometry.TriangleMesh) -> bool:
-    vertices = np.asarray(mesh.vertices)
-    triangles = np.asarray(mesh.triangles)
+def toFastTriangleCrossVector(vertices: np.ndarray, triangles: np.ndarray) -> np.ndarray:
+    v0 = vertices[triangles[:, 0]]
+    v1 = vertices[triangles[:, 1]]
+    v2 = vertices[triangles[:, 2]]
+
+    e0 = v1 - v0
+    e1 = v2 - v0
+
+    normal_vectors = np.cross(e0, e1)
+    return normal_vectors
+
+
+def toTriangleCrossVector(vertices: np.ndarray, triangles: np.ndarray, is_fast: bool = False) -> np.ndarray:
+    if is_fast:
+        return toFastTriangleCrossVector(vertices, triangles)
 
     v0 = vertices[triangles[:, 0]]
     v1 = vertices[triangles[:, 1]]
@@ -60,11 +72,25 @@ def updateTriangleNormals(mesh: o3d.geometry.TriangleMesh) -> bool:
 
     stacked = np.stack([normal_vectors_1, normal_vectors_2, normal_vectors_3], axis=1)
     max_normal_vectors = stacked[np.arange(normal_vectors_1.shape[0]), max_indices]
+    return max_normal_vectors
 
-    norm = np.linalg.norm(max_normal_vectors, axis=1)
-    print(np.min(norm))
+def toTriangleAreas(vertices: np.ndarray, triangles: np.ndarray, is_fast: bool = False) -> np.ndarray:
+    normal_vectors = toTriangleCrossVector(vertices, triangles, is_fast)
+
+    norm = np.linalg.norm(normal_vectors, axis=1)
+    return norm
+
+def toTriangleNormals(vertices: np.ndarray, triangles: np.ndarray) -> np.ndarray:
+    max_normal_vectors = toTriangleCrossVector(vertices, triangles)
 
     normals = normalize(max_normal_vectors)
+    return normals
+
+def updateTriangleNormals(mesh: o3d.geometry.TriangleMesh) -> bool:
+    vertices = np.asarray(mesh.vertices)
+    triangles = np.asarray(mesh.triangles)
+
+    normals = toTriangleNormals(vertices, triangles)
 
     mesh.triangle_normals = o3d.utility.Vector3dVector(normals)
     return True

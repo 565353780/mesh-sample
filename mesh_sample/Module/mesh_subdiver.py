@@ -8,9 +8,9 @@ from joblib import Parallel, delayed
 
 from mesh_sample.Data.edge_points import EdgePoints
 from mesh_sample.Data.inner_points import InnerPoints
-from mesh_sample.Method.normal import updateTriangleNormals, updateVertexNormals
+from mesh_sample.Method.normal import toTriangleAreas, updateTriangleNormals, updateVertexNormals
 from mesh_sample.Method.path import createFileFolder, renameFile
-from mesh_sample.Method.dist import toMinVertexDist
+from mesh_sample.Method.dist import toMinNeighboorDist
 from mesh_sample.Method.scale import toMaxBound
 from mesh_sample.Method.rotate import getRAndT
 from mesh_sample.Module.tqdm_joblib import tqdm_joblib
@@ -20,7 +20,6 @@ import warnings
 
 warnings.filterwarnings("error", category=RuntimeWarning)
 """
-
 
 class MeshSubdiver(object):
     def __init__(
@@ -75,7 +74,7 @@ class MeshSubdiver(object):
 
         max_bound = toMaxBound(mesh)
         weighted_dist_max = dist_max * max_bound
-        # min_vertex_dist = toMinVertexDist(mesh)
+        # min_vertex_dist = toMinNeighboorDist(mesh)
         # weighted_dist_max = dist_max * max_bound + (1.0 - dist_max) * min_vertex_dist
 
         self.edge_points.loadMesh(mesh, weighted_dist_max)
@@ -140,32 +139,16 @@ class MeshSubdiver(object):
         R, T = getRAndT(merge_vertices)
 
         unit_vertices = (merge_vertices + T) @ R.T
-        """
-        try:
-            unit_vertices = (merge_vertices + T) @ R.T
-        except RuntimeWarning as e:
-            print("⚠️ 捕获到 RuntimeWarning:", e)
-            print("merge_vertices shape:", merge_vertices.shape)
-            print("T shape:", T.shape)
-            print("R shape:", R.shape)
-
-            # 检查是否有非法值
-            def check_array(name, arr):
-                print(f"{name}:")
-                print("  Any NaN:", np.isnan(arr).any())
-                print("  Any Inf:", np.isinf(arr).any())
-                print("  Max abs value:", np.max(np.abs(arr)))
-                print("  Sample:", arr[:5])
-
-            check_array("merge_vertices", merge_vertices)
-            check_array("T", T)
-            check_array("R", R)
-        """
 
         tri = Delaunay(unit_vertices[:, :2])
         triangles = tri.simplices
 
-        unique_triangles = merge_vertex_idxs[triangles]
+        triangle_areas = toTriangleAreas(merge_vertices, triangles, True)
+        valid_triangle_mask = triangle_areas > 1e-6
+
+        valid_triangles = triangles[valid_triangle_mask]
+
+        unique_triangles = merge_vertex_idxs[valid_triangles]
 
         return unique_triangles
 

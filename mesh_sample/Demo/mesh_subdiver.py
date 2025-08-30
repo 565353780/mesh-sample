@@ -6,12 +6,14 @@ from mesh_sample.Module.mesh_subdiver import MeshSubdiver
 
 
 def demo():
-    mesh_file_path = "/Users/chli/chLi/Dataset/Famous/bunny-v2.ply"
-    # mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
+    home = os.environ['HOME']
+
+    mesh_file_path = home + "/chLi/Dataset/Famous/bunny-v2.ply"
+    # mesh_file_path = home + "/chLi/Dataset/BitAZ/mesh/BitAZ.ply"
     dist_max = 1.0 / 100
     # dist_max = float("inf")
     print_progress = True
-    save_mesh_file_path = "/Users/chli/chLi/Dataset/BitAZ/subdiv_mesh/BitAZ.ply"
+    save_mesh_file_path = home + "/chLi/Dataset/BitAZ/subdiv_mesh/BitAZ.ply"
     save_mesh_file_path = None
 
     if not os.path.exists(mesh_file_path):

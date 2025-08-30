@@ -1,14 +1,11 @@
 import numpy as np
-import open3d as o3d
 from scipy.spatial import cKDTree
 
 
-def toMinVertexDist(mesh: o3d.geometry.TriangleMesh) -> float:
-    vertices = np.asarray(mesh.vertices)
+def toMinNeighboorDist(points: np.ndarray) -> float:
+    tree = cKDTree(points)
 
-    tree = cKDTree(vertices)
-
-    distances, indices = tree.query(vertices, k=2)
+    distances, _ = tree.query(points, k=2)
 
     min_nonzero_distances = distances[:, 1]
 
